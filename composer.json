@@ -1,0 +1,13 @@
+{
+	"name": "psycle-wordpress-plugins/psycle-pii-scrub",
+	"description": "WP_CLI command to scrub PII data from a WordPress database. Calling 'wp pii-scrub' will automatically detect major plugins (BuddyPress, WooCommerce) and scrub/replace any PII (personal information) so that a database compromise doesn't cause issues. Additional custom meta data to check/scrub can be defined at runtime.",
+	"type": "wordpress-plugin",
+	"authors": [
+		{
+			"name": "Psycle Interactive",
+			"email": "wordpress@psycle.com"
+		}
+	],
+	"minimum-stability": "stable",
+	"require": {}
+}
