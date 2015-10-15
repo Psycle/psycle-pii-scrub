@@ -21,8 +21,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 class PII_Scrub extends \WP_CLI_Command {
 
 	/**
-	 * Scrub PII data from a databasem replacing most data with series of 'XXXXX ' strings.
-	 * Does not directly affect users with an @psycle domain email address.
+	 * Scrub PII data from a database replacing most data with series of 'XXXXX ' strings.
+	 * Does not directly affect users with a @psycle domain email address.
 	 *
 	 * ## OPTIONS
 	 *
