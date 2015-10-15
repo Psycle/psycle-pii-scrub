@@ -59,6 +59,13 @@ class PII_Scrub extends \WP_CLI_Command {
 	 *
 	 *   # Additional custom table with column names to be scrubbed.
 	 *     wp pii-scrub --customtablefields=audit_trail:user_email,operation
+	 *
+	 * @global \wpdb $wpdb The WordPress database abstraction instance.
+	 *
+	 * @param array $_          Any positional arguments passed to the command, not used.
+	 * @param array $assoc_args Any arguments passed to the command in the format --key=value or --flag.
+	 *
+	 * @return void
 	 */
 	public function __invoke( $_, $assoc_args ) {
 		global $wpdb;
@@ -188,7 +195,7 @@ class PII_Scrub extends \WP_CLI_Command {
 	 *
 	 * @global \wpdb $wpdb The WordPress database abstraction instance.
 	 *
-	 * @return null
+	 * @return void
 	 */
 	private function _core_users_data() {
 		global $wpdb;
@@ -209,15 +216,15 @@ WHERE user_email NOT LIKE '%@psycle%'
 
 USERS;
 
-		//\WP_CLI::line( $users_table_update );
-		$wpdb->query( $users_table_update ); // classed as 'unprepared SQL' due to passing in complete sql.
+		// \WP_CLI::line( $users_table_update );
+		$wpdb->query( $users_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
 	}
 
 	/**
 	 * This scrubs the wp_usermeta table, replacing all meta_values with a string (almost) the same length made up of repeating 'XXXXX '.
 	 *
 	 * @param array $extra_meta Extra user meta fields to scrub.
-	 * @return null
+	 * @return void
 	 */
 	private function _core_usermeta_data( $extra_meta = null ) {
 
@@ -254,7 +261,7 @@ USERS;
 	 * This scrubs the wp_postmeta table, replacing all meta_values with a string (almost) the same length made up of repeating 'XXXXX '.
 	 *
 	 * @param array $meta The post meta fields to scrub.
-	 * @return null
+	 * @return void
 	 */
 	private function _core_postmeta_data( $meta ) {
 
@@ -281,7 +288,7 @@ USERS;
 	 *
 	 * @global \wpdb $wpdb The WordPress database abstraction instance.
 	 *
-	 * @return null
+	 * @return void
 	 */
 	private function _core_commenters_data() {
 		global $wpdb;
@@ -296,8 +303,8 @@ WHERE comment_author_email NOT LIKE '%@psycle%'
 
 COMMENTS;
 
-		//\WP_CLI::line( $comments_table_update );
-		$wpdb->query( $comments_table_update ); // classed as 'unprepared SQL' due to passing in complete sql.
+		// \WP_CLI::line( $comments_table_update );
+		$wpdb->query( $comments_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
 	}
 
 	/**
@@ -306,7 +313,7 @@ COMMENTS;
 	 * @global \wpdb $wpdb The WordPress database abstraction instance.
 	 *
 	 * @param array $data An associate array of tablenames and column names to scrub.
-	 * @return null
+	 * @return void
 	 */
 	private function _custom_table_data( $data ) {
 		global $wpdb;
@@ -316,13 +323,13 @@ COMMENTS;
 
 			$set = array();
 			foreach ( $columns as $column ) {
-				$column = str_replace( '`', '', $column ); // break escaping
+				$column = str_replace( '`', '', $column ); // Break any bad data escaping.
 				$set[] = "\n`$column` = REPEAT( 'XXXXX ', LENGTH( `$column` ) / 6 )";
 			}
 			$custom_table_update = "UPDATE {$wpdb->prefix}{$tablename} SET " . implode( ', ', $set ) . "\n";
 
-			//\WP_CLI::line( $custom_table_update );
-			$wpdb->query( $custom_table_update ); // classed as 'unprepared SQL' due to passing in complete sql.
+			// \WP_CLI::line( $custom_table_update );
+			$wpdb->query( $custom_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
 		}
 	}
 
@@ -337,7 +344,7 @@ COMMENTS;
 		global $wpdb;
 
 		// Tables will exist as long as the plugin hasn't been uninstalled.
-		$tables = $wpdb->get_col( "SHOW TABLES LIKE '{$wpdb->prefix}bp_%'" );
+		$tables = $wpdb->get_col( "SHOW TABLES LIKE '{$wpdb->prefix}bp_%'" ); // Note: Direct db call ok, not using cache ok, there's no other way.
 
 		return ! empty( $tables );
 	}
@@ -347,7 +354,7 @@ COMMENTS;
 	 *
 	 * @global \wpdb $wpdb The WordPress database abstraction instance.
 	 *
-	 * @return null
+	 * @return void
 	 */
 	private function _plugin_buddypress() {
 		global $wpdb;
@@ -360,8 +367,8 @@ WHERE value <> ''
 
 PROFILEDATA;
 
-		//\WP_CLI::line( $profile_table_update );
-		$wpdb->query( $profile_table_update ); // classed as 'unprepared SQL' due to passing in complete sql.
+		// \WP_CLI::line( $profile_table_update );
+		$wpdb->query( $profile_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
 	}
 
 	/**
@@ -375,7 +382,7 @@ PROFILEDATA;
 		global $wpdb;
 
 		// Tables will exist as long as the plugin hasn't been uninstalled.
-		$tables = $wpdb->get_col( "SHOW TABLES LIKE '{$wpdb->prefix}woocommerce%'" );
+		$tables = $wpdb->get_col( "SHOW TABLES LIKE '{$wpdb->prefix}woocommerce%'" ); // Note: Direct db call ok, not using cache ok, there's no other way.
 
 		return ! empty( $tables );
 	}
@@ -385,8 +392,7 @@ PROFILEDATA;
 	 *
 	 * @global \wpdb $wpdb The WordPress database abstraction instance.
 	 *
-	 * @param array $extra_meta Extra user meta fields to scrub.
-	 * @return null
+	 * @return void
 	 */
 	private function _plugin_woocommerce() {
 		global $wpdb;
@@ -449,7 +455,7 @@ PROFILEDATA;
 		global $wpdb;
 
 		$tablename = $wpdb->$table;
-		$wildcard_fields = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT meta_key FROM $tablename WHERE meta_key LIKE %s", $field ) ); // classed as 'unprepared SQL' due to tablename.
+		$wildcard_fields = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT meta_key FROM $tablename WHERE meta_key LIKE %s", $field ) ); // Note: unprepared SQL ok due to tablename. Direct db call ok, not using cache ok, there's no other way.
 		return $wildcard_fields;
 	}
 
@@ -459,7 +465,7 @@ PROFILEDATA;
 	 * @global \wpdb $wpdb The WordPress database abstraction instance.
 	 *
 	 * @param array $fields The post meta fields to scrub.
-	 * @return null
+	 * @return void
 	 */
 	private function _scrub_postmeta( $fields ) {
 		global $wpdb;
@@ -473,8 +479,8 @@ WHERE meta_key IN ( '{$meta_fields}' ) AND meta_value <> ''
 
 POSTMETA;
 
-		//\WP_CLI::line( $postmeta_table_update );
-		$wpdb->query( $postmeta_table_update ); // classed as 'unprepared SQL' due to passing in complete sql.
+		// \WP_CLI::line( $postmeta_table_update );
+		$wpdb->query( $postmeta_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
 	}
 
 	/**
@@ -483,7 +489,7 @@ POSTMETA;
 	 * @global \wpdb $wpdb The WordPress database abstraction instance.
 	 *
 	 * @param array $fields The user meta fields to scrub.
-	 * @return null
+	 * @return void
 	 */
 	private function _scrub_usermeta( $fields ) {
 		global $wpdb;
@@ -499,7 +505,7 @@ WHERE meta_key IN ( '{$meta_fields}' ) AND meta_value <> ''
 
 USERMETA;
 
-		//\WP_CLI::line( $usermeta_table_update );
-		$wpdb->query( $usermeta_table_update ); // classed as 'unprepared SQL' due to passing in complete sql.
+		// \WP_CLI::line( $usermeta_table_update );
+		$wpdb->query( $usermeta_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
 	}
 }
