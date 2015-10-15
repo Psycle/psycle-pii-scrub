@@ -70,9 +70,13 @@ class PII_Scrub extends \WP_CLI_Command {
 	public function __invoke( $_, $assoc_args ) {
 		global $wpdb;
 
+		// Check for Psycle standardised wp-config.php, used to ensure Live checks.
+		if ( ! defined( 'LIVE_ENVIRONMENT' ) ) {
+			\WP_CLI::error( sprintf( __( 'wp-config.php for \'%s\' does not appear to be in the correct Psycle format. Unable to determine if site is running as Live or not.', 'psycle' ), get_bloginfo( 'name' ) ) );
+		}
+
 		// Check for running on Live.
-		$is_live = defined( 'LIVE_ENVIRONMENT' ) && LIVE_ENVIRONMENT;
-		if ( $is_live ) {
+		if ( LIVE_ENVIRONMENT ) {
 			// Display warning in large red box.
 			\WP_CLI::error_multi_line( array( sprintf( __( 'Database for \'%s\' is currently set as Live.', 'psycle' ), get_bloginfo( 'name' ) ) ) );
 
