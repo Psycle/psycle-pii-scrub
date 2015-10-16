@@ -127,7 +127,7 @@ class PII_Scrub extends \WP_CLI_Command {
 
 		// Detect for additional tables and their column names.
 		if ( isset( $assoc_args['customtablefields'] ) ) {
-			$tables = explode( ';', $assoc_args['customtablefields'] );
+			$tables = explode( ';', trim( $assoc_args['customtablefields'], ';' ) );
 			foreach ( $tables as $data ) {
 				list ( $tablename, $columns ) = explode( ':', trim( $data ) );
 				$columns = explode( ',', $columns );
@@ -327,15 +327,31 @@ COMMENTS;
 		foreach ( $data as $tablename => $columns ) {
 			$tablename = str_replace( $wpdb->prefix, '', $tablename );
 
+			// Check that the custom table first exists.
+			$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->prefix . $tablename ) ); // Note: Direct db call ok, not using cache ok, there's no other way.
+			if ( null === $table_exists ) {
+				continue;
+			}
+
+			// Grab the existing columns, used later.
+			$exist_columns = $wpdb->get_col( "SHOW COLUMNS FROM {$wpdb->prefix}{$tablename}" ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
+
 			$set = array();
 			foreach ( $columns as $column ) {
+				// Check that the column we want exists.
+				if ( ! in_array( $column, $exist_columns ) ) {
+					continue;
+				}
 				$column = str_replace( '`', '', $column ); // Break any bad data escaping.
 				$set[] = "\n`$column` = REPEAT( 'XXXXX ', LENGTH( `$column` ) / 6 )";
 			}
-			$custom_table_update = "UPDATE {$wpdb->prefix}{$tablename} SET " . implode( ', ', $set ) . "\n";
 
-			// \WP_CLI::line( $custom_table_update );
-			$wpdb->query( $custom_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
+			// Check that there is something to do.
+			if ( ! empty( $set ) ) {
+				$custom_table_update = "UPDATE {$wpdb->prefix}{$tablename} SET " . implode( ', ', $set ) . "\n";
+				// \WP_CLI::line( $custom_table_update );
+				$wpdb->query( $custom_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
+			}
 		}
 	}
 
