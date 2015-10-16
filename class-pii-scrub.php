@@ -304,7 +304,7 @@ USERS;
 UPDATE {$wpdb->comments} SET
 	comment_author = REPEAT( 'XXXXX ', LENGTH( comment_author ) / 6 ),
 	comment_author_email = REPLACE( comment_author_email, SUBSTRING_INDEX( comment_author_email, '@', 1 ), CONCAT( 'user-', user_id ) ),
-	comment_author_url = 'http://www.example.org/'
+	comment_author_url = IF ( comment_author_url <> '', 'http://www.example.org/', comment_author_url )
 WHERE comment_author_email NOT LIKE '%@psycle%'
 
 COMMENTS;
