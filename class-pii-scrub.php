@@ -21,6 +21,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 class PII_Scrub extends \WP_CLI_Command {
 
 	/**
+	 * Whether to apply the scrubbing or output the database queries to be viewed.
+	 *
+	 * @since 2.0
+	 * @var bool
+	 */
+	private $dry_run = false;
+
+	/**
 	 * Scrub PII data from a database replacing most data with series of 'XXXXX ' strings.
 	 * Does not directly affect users with a @psycle domain email address.
 	 *
@@ -43,6 +51,10 @@ class PII_Scrub extends \WP_CLI_Command {
 	 *
 	 * [--yes]
 	 * : Do not prompt for final confirmation.
+	 *
+	 * [--dryrun]
+	 * : This runs through the rest of the script normally, but the final database
+	 *   queries are instead outputted to the command line to be viewed/checked.
 	 *
 	 * [--live]
 	 * : Allow running even when the database config is set to use Live details.
@@ -175,6 +187,13 @@ class PII_Scrub extends \WP_CLI_Command {
 		}
 		\WP_CLI::line( '' );
 
+		// Are we dry running it.
+		if ( isset( $assoc_args['dryrun'] ) ) {
+			$this->dry_run = true;
+			\WP_CLI::line( __( 'Note: This is a dry run, no changes will be made. Database queries will be outputted instead.', 'psycle' ) );
+			\WP_CLI::line( '' );
+		}
+
 		// Confirm that the scrubbing should go ahead.
 		\WP_CLI::confirm( __( 'Are you sure you wish to proceed?', 'psycle' ), $assoc_args );
 
@@ -222,8 +241,11 @@ WHERE user_email NOT LIKE '%@psycle%'
 
 USERS;
 
-		// \WP_CLI::line( $users_table_update );
-		$wpdb->query( $users_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
+		if ( $this->dry_run ) {
+			\WP_CLI::line( $users_table_update );
+		} else {
+			$wpdb->query( $users_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
+		}
 	}
 
 	/**
@@ -309,8 +331,11 @@ WHERE comment_author_email NOT LIKE '%@psycle%'
 
 COMMENTS;
 
-		// \WP_CLI::line( $comments_table_update );
-		$wpdb->query( $comments_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
+		if ( $this->dry_run ) {
+			\WP_CLI::line( $comments_table_update );
+		} else {
+			$wpdb->query( $comments_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
+		}
 	}
 
 	/**
@@ -349,8 +374,11 @@ COMMENTS;
 			// Check that there is something to do.
 			if ( ! empty( $set ) ) {
 				$custom_table_update = "UPDATE {$wpdb->prefix}{$tablename} SET " . implode( ', ', $set ) . "\n";
-				// \WP_CLI::line( $custom_table_update );
-				$wpdb->query( $custom_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
+				if ( $this->dry_run ) {
+					\WP_CLI::line( $custom_table_update );
+				} else {
+					$wpdb->query( $custom_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
+				}
 			}
 		}
 	}
@@ -389,8 +417,11 @@ WHERE value <> ''
 
 PROFILEDATA;
 
-		// \WP_CLI::line( $profile_table_update );
-		$wpdb->query( $profile_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
+		if ( $this->dry_run ) {
+			\WP_CLI::line( $profile_table_update );
+		} else {
+			$wpdb->query( $profile_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
+		}
 	}
 
 	/**
@@ -504,8 +535,11 @@ WHERE meta_key IN ( '{$meta_fields}' ) AND meta_value <> ''
 
 POSTMETA;
 
-		// \WP_CLI::line( $postmeta_table_update );
-		$wpdb->query( $postmeta_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
+		if ( $this->dry_run ) {
+			\WP_CLI::line( $postmeta_table_update );
+		} else {
+			$wpdb->query( $postmeta_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
+		}
 	}
 
 	/**
@@ -530,7 +564,10 @@ WHERE meta_key IN ( '{$meta_fields}' ) AND meta_value <> ''
 
 USERMETA;
 
-		// \WP_CLI::line( $usermeta_table_update );
-		$wpdb->query( $usermeta_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
+		if ( $this->dry_run ) {
+			\WP_CLI::line( $usermeta_table_update );
+		} else {
+			$wpdb->query( $usermeta_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
+		}
 	}
 }
