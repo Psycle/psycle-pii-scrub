@@ -217,7 +217,7 @@ UPDATE {$wpdb->users} SET
 	display_name = REPLACE( display_name, display_name, CONCAT( 'user-', ID ) ),
 	user_email = REPLACE( user_email, SUBSTRING_INDEX( user_email, '@', 1 ), CONCAT( 'user-', ID ) ),
 	user_pass = '{$new_password}',
-	user_url = 'http://www.example.org/'
+	user_url = IF ( user_url <> '', 'http://www.example.org/', user_url )
 WHERE user_email NOT LIKE '%@psycle%'
 
 USERS;
