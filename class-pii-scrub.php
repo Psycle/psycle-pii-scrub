@@ -37,6 +37,8 @@ class PII_Scrub extends \WP_CLI_Command {
 	 * [--customtablefields=<tablename-fields>]
 	 * : Additional tables and fields can be scrubbed by passing a tablename
 	 *  with colon, then comma separated fields finishing with a semi-colon.
+	 *  Because the semi-colon ; is a special character within shell scripts
+	 *  this option should always be enclosed within single quotes '.
 	 *  The database prefix can be excluded from the tablename.
 	 *
 	 * [--yes]
@@ -58,7 +60,7 @@ class PII_Scrub extends \WP_CLI_Command {
 	 *     wp pii-scrub --userfields=%_name --postfields=memo_category%
 	 *
 	 *   # Additional custom table with column names to be scrubbed.
-	 *     wp pii-scrub --customtablefields=audit_trail:user_email,operation
+	 *     wp pii-scrub --customtablefields='audit_trail:user_email,operation;'
 	 *
 	 * @global \wpdb $wpdb The WordPress database abstraction instance.
 	 *
