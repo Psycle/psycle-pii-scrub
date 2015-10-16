@@ -30,6 +30,8 @@ class PII_Scrub extends \WP_CLI_Command {
 
 	/**
 	 * Scrub PII data from a database replacing most data with series of 'XXXXX ' strings.
+	 * Depending on field/column names will replace email addresses with changed user part,
+	 * with URLs will set to 'http://www.example.org/', for telephones a randomised number.
 	 * Does not directly affect users with a @psycle domain email address.
 	 *
 	 * ## OPTIONS
@@ -368,8 +370,25 @@ COMMENTS;
 					continue;
 				}
 				$column = str_replace( '`', '', $column ); // Break any bad data escaping.
-				$set[] = "\n`$column` = REPEAT( 'XXXXX ', LENGTH( `$column` ) / 6 )";
-			}
+
+				// Switch based on column name.
+				if ( false !== stripos( $column, 'email' ) ) {
+					$set[] = "\n `$column` = IF ( `$column` LIKE '%@psycle%', `$column`, REPLACE( `$column`, SUBSTRING_INDEX( `$column`, '@', 1 ), '$column' ) )";
+
+				} elseif ( false !== stripos( $column, 'url' ) ||
+							false !== stripos( $column, 'website' ) ) {
+					$set[] = "\n `$column` = 'http://www.example.org/'";
+
+				} elseif ( false !== stripos( $column, 'phone' ) ||
+							false !== stripos( $column, 'tel' ) ||
+							false !== stripos( $column, 'mobile' ) ||
+							false !== stripos( $column, 'fax' ) ) {
+					$set[] = "\n `$column` = CONCAT( '+44 (0) 555 ', FLOOR( RAND() * 999999 ) )";
+
+				} else {
+					$set[] = "\n`$column` = REPEAT( 'XXXXX ', LENGTH( `$column` ) / 6 )";
+				}
+			} // Loop all columns.
 
 			// Check that there is something to do.
 			if ( ! empty( $set ) ) {
@@ -516,7 +535,9 @@ PROFILEDATA;
 	}
 
 	/**
-	 * Utility function. This scrubs the wp_postmeta table, replacing all meta_values with a string (almost) the same length made up of repeating 'XXXXX '.
+	 * Utility function. This scrubs the wp_postmeta table, replacing all non-blank meta_values with either a random
+	 * email address to the same domain, an example URL, a 555 random telephone number or a string (almost) the same
+	 * length as the original value made up of repeating 'XXXXX '.
 	 *
 	 * @global \wpdb $wpdb The WordPress database abstraction instance.
 	 *
@@ -526,24 +547,70 @@ PROFILEDATA;
 	private function _scrub_postmeta( $fields ) {
 		global $wpdb;
 
-		$meta_fields = implode( "', '", $fields );
+		// Need to treat email, url and tel fields differently, so split them out.
+		$all_fields = array();
+		foreach ( $fields as $field ) {
+			if ( false !== stripos( $field, 'email' ) ) {
+				$all_fields['email'][] = $field;
 
-		$postmeta_table_update = <<<POSTMETA
+			} elseif ( false !== stripos( $field, 'url' ) ||
+						false !== stripos( $field, 'website' ) ) {
+				$all_fields['url'][] = $field;
+
+			} elseif ( false !== stripos( $field, 'phone' ) ||
+						false !== stripos( $field, 'tel' ) ||
+						false !== stripos( $field, 'mobile' ) ||
+						false !== stripos( $field, 'fax' ) ) {
+				$all_fields['tel'][] = $field;
+
+			} else {
+				$all_fields['other'][] = $field;
+			}
+		}
+
+		// Loop through the resultant separate field types, setting their new value appropriately.
+		foreach ( $all_fields as $type => $fields ) {
+			$meta_fields = implode( "', '", $fields );
+			$new_meta_value = '';
+
+			switch ( $type ) {
+				case 'email' :
+					$new_meta_value = "IF ( meta_value LIKE '%@psycle%', meta_value, REPLACE( meta_value, SUBSTRING_INDEX( meta_value, '@', 1 ), CONCAT( meta_key, '-', post_id ) ) )";
+					break;
+
+				case 'url' :
+					$new_meta_value = "'http://www.example.org/'";
+					break;
+
+				case 'tel' :
+					$new_meta_value = "CONCAT( '+44 (0) 555 ', FLOOR( RAND() * 999999 ) )";
+					break;
+
+				case 'other' :
+				default:
+					$new_meta_value = "REPEAT( 'XXXXX ', LENGTH( meta_value ) / 6 )";
+					break;
+			}
+
+			$postmeta_table_update = <<<POSTMETA
 UPDATE {$wpdb->postmeta} SET
-	meta_value = REPEAT( 'XXXXX ', LENGTH( meta_value ) / 6 )
+	meta_value = {$new_meta_value}
 WHERE meta_key IN ( '{$meta_fields}' ) AND meta_value <> ''
 
 POSTMETA;
 
-		if ( $this->dry_run ) {
-			\WP_CLI::line( $postmeta_table_update );
-		} else {
-			$wpdb->query( $postmeta_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
-		}
+			if ( $this->dry_run ) {
+				\WP_CLI::line( $postmeta_table_update );
+			} else {
+				$wpdb->query( $postmeta_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
+			}
+		} // Loop the field types
 	}
 
 	/**
-	 * Utility function. This scrubs the wp_usermeta table, replacing all meta_values with a string (almost) the same length made up of repeating 'XXXXX '.
+	 * Utility function. This scrubs the wp_usermeta table, replacing all non-blank meta_values with either a random
+	 * email address to the same domain, an example URL, a 555 random telephone number or a string (almost) the same
+	 * length as the original value made up of repeating 'XXXXX '.
 	 *
 	 * @global \wpdb $wpdb The WordPress database abstraction instance.
 	 *
@@ -553,21 +620,65 @@ POSTMETA;
 	private function _scrub_usermeta( $fields ) {
 		global $wpdb;
 
-		$meta_fields = implode( "', '", $fields );
+		// Need to treat email, url and tel fields differently, so split them out.
+		$all_fields = array();
+		foreach ( $fields as $field ) {
+			if ( false !== stripos( $field, 'email' ) ) {
+				$all_fields['email'][] = $field;
 
-		// Note: Only affects meta not against users who have a @psycle email address.
-		$usermeta_table_update = <<<USERMETA
+			} elseif ( false !== stripos( $field, 'url' ) ||
+						false !== stripos( $field, 'website' ) ) {
+				$all_fields['url'][] = $field;
+
+			} elseif ( false !== stripos( $field, 'phone' ) ||
+						false !== stripos( $field, 'tel' ) ||
+						false !== stripos( $field, 'mobile' ) ||
+						false !== stripos( $field, 'fax' ) ) {
+				$all_fields['tel'][] = $field;
+
+			} else {
+				$all_fields['other'][] = $field;
+			}
+		}
+
+		// Loop through the resultant separate field types, setting their new value appropriately.
+		foreach ( $all_fields as $type => $fields ) {
+			$meta_fields = implode( "', '", $fields );
+			$new_meta_value = '';
+
+			switch ( $type ) {
+				case 'email' :
+					$new_meta_value = "IF ( meta_value LIKE '%@psycle%', meta_value, REPLACE( meta_value, SUBSTRING_INDEX( meta_value, '@', 1 ), CONCAT( meta_key, '-', user_id ) ) )";
+					break;
+
+				case 'url' :
+					$new_meta_value = "'http://www.example.org/'";
+					break;
+
+				case 'tel' :
+					$new_meta_value = "CONCAT( '+44 (0) 555 ', FLOOR( RAND() * 999999 ) )";
+					break;
+
+				case 'other' :
+				default:
+					$new_meta_value = "REPEAT( 'XXXXX ', LENGTH( meta_value ) / 6 )";
+					break;
+			}
+
+			// Note: Only affects meta not against users who have a @psycle email address.
+			$usermeta_table_update = <<<USERMETA
 UPDATE {$wpdb->usermeta} SET
-	meta_value = REPEAT( 'XXXXX ', LENGTH( meta_value ) / 6 )
+	meta_value = {$new_meta_value}
 WHERE meta_key IN ( '{$meta_fields}' ) AND meta_value <> ''
 	AND user_id NOT IN ( SELECT ID FROM {$wpdb->users} WHERE user_email LIKE '%@psycle%' )
 
 USERMETA;
 
-		if ( $this->dry_run ) {
-			\WP_CLI::line( $usermeta_table_update );
-		} else {
-			$wpdb->query( $usermeta_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
-		}
+			if ( $this->dry_run ) {
+				\WP_CLI::line( $usermeta_table_update );
+			} else {
+				$wpdb->query( $usermeta_table_update ); // Note: unprepared SQL ok due to passing in complete sql. Direct db call ok, not using cache ok, there's no other way.
+			}
+		} // Loop the field types
 	}
 }
