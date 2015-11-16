@@ -40,4 +40,3 @@ Generally follow the normal procedure for WordPress plugins.
 
 ### 1.0
 * Initial version of plugin.
-
