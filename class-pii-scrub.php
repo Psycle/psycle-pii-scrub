@@ -100,6 +100,11 @@ class PII_Scrub extends \WP_CLI_Command {
 			if ( ! \WP_CLI\Utils\get_flag_value( $assoc_args, 'live' ) ) {
 				\WP_CLI::error( __( 'Re-run the same command with \'--live\' if you really wish to continue.', 'psycle' ) );
 			}
+
+			// If using --live ensure that --yes isn't also used.
+			if ( \WP_CLI\Utils\get_flag_value( $assoc_args, 'live' ) && \WP_CLI\Utils\get_flag_value( $assoc_args, 'yes' ) ) {
+				unset( $assoc_args['yes'] );
+			}
 		}
 
 		// Core PII data.

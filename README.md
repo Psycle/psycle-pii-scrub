@@ -4,7 +4,7 @@
 * Tags: psycle
 * Requires at least: 3.8
 * Tested up to: 4.3.1
-* Stable tag: 2.0.1
+* Stable tag: 2.0.2
 
 ## Description
 
@@ -19,6 +19,9 @@ Generally follow the normal procedure for WordPress plugins.
 1. Alternatively the directory can be placed within `/wp-content/mu-plugins/` and the psycle-pii-scrub.php file can be copied/moved up a directory.
 
 ## Changelog
+
+### 2.0.2
+* Check on use of --live and suppress concurrent use of --yes, ensure a manual confirmation is required.
 
 ### 2.0.1
 * Update to composer.json to mark as install as MU plugin
