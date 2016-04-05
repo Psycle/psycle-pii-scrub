@@ -12,6 +12,9 @@ namespace Psycle\WordPress\Mu;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
+if ( ! defined( 'WP_CLI' ) ) {
+	return; // Bail if WP-CLI is not present. Doubly check in case directly loaded.
+}
 
 /**
  * Description of class-pii-scrub

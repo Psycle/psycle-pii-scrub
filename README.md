@@ -3,8 +3,8 @@
 * Contributors: psycle
 * Tags: psycle
 * Requires at least: 3.8
-* Tested up to: 4.3.1
-* Stable tag: 2.0.2
+* Tested up to: 4.4.2
+* Stable tag: 2.0.3
 
 ## Description
 
@@ -19,6 +19,11 @@ Generally follow the normal procedure for WordPress plugins.
 1. Alternatively the directory can be placed within `/wp-content/mu-plugins/` and the psycle-pii-scrub.php file can be copied/moved up a directory.
 
 ## Changelog
+
+### 2.0.3
+* Add check for WP_CLI within class, in case that file is directly loaded. Fixes sites white screening due to incorrect wrappers.
+* Updated plugin URl.
+* Updated lastest WordPress version tested.
 
 ### 2.0.2
 * Check on use of --live and suppress concurrent use of --yes, ensure a manual confirmation is required.
